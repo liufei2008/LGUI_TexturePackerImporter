@@ -1,4 +1,6 @@
 [English](./README_en.md)  
+#TexturePacker importer for LGUI UE4
+---
 **这是LGUI插件的一个扩展插件，需要LGUI 2.13.1及以上版本.**  
 此插件可以让LGUI导入[TexturePacker](https://www.codeandweb.com/texturepacker)的图集，并在LGUI里当作sprite data来用.  
 ### 在TexturePacker中按照下图设置：  

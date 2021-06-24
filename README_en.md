@@ -1,4 +1,6 @@
 [中文](./README.md)  
+#TexturePacker importer for LGUI UE4
+---
 **This is a LGUI's extension plugin, need LGUI version 2.13.1 and upward.**  
 This plugin allows us to import [TexturePacker](https://www.codeandweb.com/texturepacker) as LGUI's sprite data.  
 ### For TexturePacker's settins, follow the image below:  
