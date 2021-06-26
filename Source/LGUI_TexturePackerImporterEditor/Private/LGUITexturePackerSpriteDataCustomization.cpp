@@ -91,7 +91,8 @@ void FLGUITexturePackerSpriteDataCustomization::CustomizeDetails(IDetailLayoutBu
 		IDetailCategoryBuilder& borderEditorCategory = DetailBuilder.EditCategory("BorderEditor");
 		spriteSlateBrush = TSharedPtr<FSlateBrush>(new FSlateBrush);
 		spriteSlateBrush->SetResourceObject(spriteTexture);
-		spriteSlateBrush->SetUVRegion(FBox2D(TargetScriptPtr->GetSpriteInfo().GetUV0(), TargetScriptPtr->GetSpriteInfo().GetUV3()));
+		auto spriteInfo = TargetScriptPtr->GetSpriteInfo();
+		spriteSlateBrush->SetUVRegion(FBox2D(FVector2D(spriteInfo.uv0X, spriteInfo.uv3Y), FVector2D(spriteInfo.uv3X, spriteInfo.uv0Y)));
 		borderEditorCategory.AddProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerSpriteData, spriteInfo.borderLeft));
 		borderEditorCategory.AddProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerSpriteData, spriteInfo.borderRight));
 		borderEditorCategory.AddProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerSpriteData, spriteInfo.borderTop));
