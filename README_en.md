@@ -3,6 +3,7 @@
 ---
 **This is a LGUI's extension plugin, need LGUI version 2.13.1 and upward.**  
 This plugin allows us to import [TexturePacker](https://www.codeandweb.com/texturepacker) as LGUI's sprite data.  
+Tutorial video : [Bilibili](https://www.bilibili.com/video/BV1dV411s7gZ/)  [Youtube](https://youtu.be/M7FNuVww1cw)  
 ### For TexturePacker's settins, follow the image below:  
 ![](./Resources/TP_Settings.png) 
 ### In UE4 LGUI follow these steps:  
