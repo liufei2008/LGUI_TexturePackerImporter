@@ -361,7 +361,11 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 	Result = LoadObject<ULGUITexturePackerSpriteData>(NULL, *assetName);
 	if (!IsValid(Result))
 	{
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 26
+		UPackage* package = CreatePackage(*packageName);
+#else
 		UPackage* package = CreatePackage(NULL, *packageName);
+#endif
 		package->FullyLoad();
 		FString fileName = SpriteData.name;
 		Result = NewObject<ULGUITexturePackerSpriteData>(package, ULGUITexturePackerSpriteData::StaticClass(), *fileName, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone);
