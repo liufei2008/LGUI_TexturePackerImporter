@@ -31,7 +31,7 @@ public:
 		TexParams.bUseAlpha = true;
 		TexParams.CompressionSettings = CompressionSettings;
 		TexParams.bDeferCompression = true;
-		TexParams.bSRGB = false;
+		TexParams.bSRGB = true;
 		TexParams.SourceGuidHash = FGuid::NewGuid();
 
 		if (IsValid(OldTexture))
@@ -357,7 +357,7 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 		SpriteData.name = SpriteData.name.Left(lastIndexOfDot);
 	}
 	FString packageName = TEXT("/Game/") + FolderPath + "/" + SpriteData.name;
-	FString assetName = packageName + "." + SpriteData.name;
+	FString assetName = packageName + "." + FPaths::GetBaseFilename(SpriteData.name);
 	Result = LoadObject<ULGUITexturePackerSpriteData>(NULL, *assetName);
 	if (!IsValid(Result))
 	{
@@ -367,7 +367,7 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 		UPackage* package = CreatePackage(NULL, *packageName);
 #endif
 		package->FullyLoad();
-		FString fileName = SpriteData.name;
+		FString fileName = FPaths::GetBaseFilename(SpriteData.name);
 		Result = NewObject<ULGUITexturePackerSpriteData>(package, ULGUITexturePackerSpriteData::StaticClass(), *fileName, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone);
 	}
 	auto& spriteInfo = Result->spriteInfo;
