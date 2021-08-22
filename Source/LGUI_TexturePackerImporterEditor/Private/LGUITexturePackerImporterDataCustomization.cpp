@@ -18,77 +18,9 @@
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
 
+#include "AssetRegistryModule.h"
+
 #define LOCTEXT_NAMESPACE "LGUITexturePackerImporterDataCustomization"
-
-
-
-class TextureUtils
-{
-public:
-	static UTexture2D* CreateTextureAsset(UTexture2D* OldTexture, FString PackageName, int Width, int Height, TArray<FColor>& Samples, TextureCompressionSettings CompressionSettings, TextureGroup LODGroup)
-	{
-		FCreateTexture2DParameters TexParams;
-		TexParams.bUseAlpha = true;
-		TexParams.CompressionSettings = CompressionSettings;
-		TexParams.bDeferCompression = true;
-		TexParams.bSRGB = true;
-		TexParams.SourceGuidHash = FGuid::NewGuid();
-
-		if (IsValid(OldTexture))
-		{
-			if (FMessageDialog::Open(EAppMsgType::Ok, FText::FromString(FString(TEXT("A delete texture dialog will showup, just confirm delete.")))) == EAppReturnType::Ok)
-			{
-				ObjectTools::DeleteAssets({ OldTexture }, true);//if not show confirm dialog, then assets won't be deleted, don't know why
-			}
-		}
-		auto Package = FindPackage(NULL, *PackageName);
-		if (!IsValid(Package))
-		{
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 26
-			Package = CreatePackage(*PackageName);
-#else
-			Package = CreatePackage(NULL, *PackageName);
-#endif
-		}
-		UTexture2D* NewTexture = FImageUtils::CreateTexture2D(Width, Height, Samples, Package, FPaths::GetCleanFilename(PackageName), RF_Standalone | RF_Public, TexParams);
-		NewTexture->LODGroup = LODGroup;
-		NewTexture->DeferCompression = false;
-
-		FAssetRegistryModule::AssetCreated(NewTexture);
-		Package->SetDirtyFlag(true);
-
-		return NewTexture;
-	}
-
-	static bool LoadTexture2DFromFile(const FString& ImagePath, EImageFormat ImageFormat, TArray<uint8>& ResultRawData, int& ResultWidth, int& ResultHeight)
-	{
-		IImageWrapperModule& ImageWrapperModule = FModuleManager::LoadModuleChecked<IImageWrapperModule>(FName("ImageWrapper"));
-		TSharedPtr<IImageWrapper> ImageWrapper = ImageWrapperModule.CreateImageWrapper(ImageFormat);
-
-		//Load From File
-		TArray<uint8> RawFileData;
-		if (!FFileHelper::LoadFileToArray(RawFileData, *ImagePath)) return NULL;
-
-		//Create T2D!
-		if (ImageWrapper.IsValid() && ImageWrapper->SetCompressed(RawFileData.GetData(), RawFileData.Num()))
-		{
-			ResultWidth = ImageWrapper->GetWidth();
-			ResultHeight = ImageWrapper->GetHeight();
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 25
-			return ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, ResultRawData);
-#else
-			const TArray<uint8>* UncompressedBGRA = NULL;
-			if (ImageWrapper->GetRaw(ERGBFormat::BGRA, 8, UncompressedBGRA))
-			{
-				ResultRawData = *UncompressedBGRA;
-				return true;
-			}
-#endif
-		}
-
-		return false;
-	}
-};
 
 
 TSharedRef<IDetailCustomization> FLGUITexturePackerImporterDataCustomization::MakeInstance()
@@ -143,6 +75,8 @@ void FLGUITexturePackerImporterDataCustomization::CustomizeDetails(IDetailLayout
 	auto jsonFilePathHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerImporterData, jsonFilePath));
 	FString fntFileSourcePath;
 	jsonFilePathHandle->GetValue(fntFileSourcePath);
+	auto targetFolderHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerImporterData, targetFolder));
+	//auto deleteSpriteIfNotPresentHandle = DetailBuilder.GetProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerImporterData, deleteSpriteIfNotPresent));
 	createCategory.AddCustomRow(LOCTEXT("JsonSourceFile","Json File Path"))
 		.NameContent()
 		[
@@ -167,7 +101,10 @@ void FLGUITexturePackerImporterDataCustomization::CustomizeDetails(IDetailLayout
 			SNew(SButton)
 			.VAlign(VAlign_Center)
 			.HAlign(HAlign_Center)
-			.OnClicked(this, &FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked, jsonFilePathHandle)
+			.OnClicked(this, &FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked
+				, jsonFilePathHandle
+				, targetFolderHandle
+			)
 			.Text(LOCTEXT("Create", "Create"))
 		];
 
@@ -189,10 +126,13 @@ void FLGUITexturePackerImporterDataCustomization::OnPathTextCommitted(const FStr
 	PropertyHandle->SetValue(InString);
 }
 
-FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(TSharedRef<IPropertyHandle> PropertyHandle)
+FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(
+	TSharedRef<IPropertyHandle> jsonFilePropertyHandle
+	, TSharedRef<IPropertyHandle> targetFolderPropertyHandle
+)
 {
 	FString jsonFilePath;
-	PropertyHandle->GetValue(jsonFilePath);
+	jsonFilePropertyHandle->GetValue(jsonFilePath);
 	IPlatformFile& PlatformFile = FPlatformFileManager::Get().GetPlatformFile();
 	if (!PlatformFile.FileExists(*jsonFilePath))
 	{
@@ -232,28 +172,18 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(TShare
 		return FReply::Handled();
 	}
 
-	int width, height;
-	TArray<uint8> rawData;
-	if (!TextureUtils::LoadTexture2DFromFile(textureFilePath, EImageFormat::PNG, rawData, width, height))
-	{
-		UE_LOG(LGUI_TexturePackerImporterEditor, Error, TEXT("[LGUI TexturePackerImporter] Load texture file: [%s] failed!"), *jsonFilePath);
-		return FReply::Handled();
-	}
-	if (width != metaTextureWidth || height != metaTextureHeight)
-	{
-		UE_LOG(LGUI_TexturePackerImporterEditor, Warning, TEXT("[LGUI TexturePackerImporter] Texture size different! Size in json: [%d, %d], size in texture: [%d, %d]"), metaTextureWidth, metaTextureHeight, width, height);
-		//return FReply::Handled();
-	}
-
-	FString saveFolder;
-	if (!GetFolderToSaveSpriteDatas(saveFolder))
+	FString saveFolder, defaultFolder;
+	targetFolderPropertyHandle->GetValue(defaultFolder);
+	if (!GetFolderToSaveSpriteDatas(saveFolder, defaultFolder))
 	{
 		return FReply::Handled();
 	}
-	float texFullWidthReciprocal = 1.0f / width;
-	float texFullHeightReciprocal = 1.0f / height;
+	targetFolderPropertyHandle->SetValue(saveFolder);
+	float texFullWidthReciprocal = 1.0f / metaTextureWidth;
+	float texFullHeightReciprocal = 1.0f / metaTextureHeight;
 	auto framesJObject = jsonObject->GetArrayField("frames");
 	bool hasRotated = false;
+	TArray<SpriteDateStruct> spriteDataArray;
 	for (int i = 0; i < framesJObject.Num(); i++)
 	{
 		auto itemJObject = framesJObject[i]->AsObject();
@@ -264,8 +194,8 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(TShare
 		spriteData.frame_y = frameJObject->GetIntegerField("y");
 		spriteData.frame_w = frameJObject->GetIntegerField("w");
 		spriteData.frame_h = frameJObject->GetIntegerField("h");
-		spriteData.rotated = itemJObject->GetBoolField("rotated");
-		spriteData.trimmed = itemJObject->GetBoolField("trimmed");
+		auto rotated = itemJObject->GetBoolField("rotated");
+		auto trimmed = itemJObject->GetBoolField("trimmed");
 		auto spriteSourceSizeJObject = itemJObject->GetObjectField("spriteSourceSize");
 		spriteData.spriteSourceSize_x = spriteSourceSizeJObject->GetIntegerField("x");
 		spriteData.spriteSourceSize_y = spriteSourceSizeJObject->GetIntegerField("y");
@@ -274,27 +204,35 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(TShare
 		auto sourceSizeJOjbect = itemJObject->GetObjectField("sourceSize");
 		spriteData.sourceSize_w = sourceSizeJOjbect->GetIntegerField("w");
 		spriteData.sourceSize_h = sourceSizeJOjbect->GetIntegerField("h");
-		if (spriteData.rotated)
+		spriteDataArray.Add(spriteData);
+		if (rotated)
 		{
-			hasRotated = true;
+			FMessageDialog::Open(EAppMsgType::Ok
+				, FText::FromString(FString::Printf(TEXT("Detect rotated sprite, this is not supported!\
+\nPlease uncheck the \"Allow rotation\" in TexturePacker."))));
+			return FReply::Handled();
 		}
-
-		CreateSpriteData(spriteData, texFullWidthReciprocal, texFullHeightReciprocal, saveFolder);
+		if (trimmed)
+		{
+			FMessageDialog::Open(EAppMsgType::Ok
+				, FText::FromString(FString::Printf(TEXT("Detect trimmed sprite, this is not supported!\
+\nPlease change the \"Trim mode\" to \"None\" in TexturePacker."))));
+			return FReply::Handled();
+		}
 	}
-	if (hasRotated)
+	auto prevSprites = TargetScriptPtr->sprites;
+	TargetScriptPtr->sprites.Empty();
+	for (int i = 0; i < spriteDataArray.Num(); i++)
 	{
-		FMessageDialog::Open(EAppMsgType::Ok
-			, FText::FromString(FString::Printf(TEXT("Detect rotated sprite, this is not supported!"))));
+		auto spriteDataObj = CreateSpriteData(spriteDataArray[i], texFullWidthReciprocal, texFullHeightReciprocal, saveFolder);
+		TargetScriptPtr->sprites.Add(spriteDataObj);
 	}
 
-	int pixelCount = width * height;
-	TArray<FColor> atlasTexturePixels;
-	atlasTexturePixels.AddUninitialized(pixelCount);
-	FMemory::Memcpy((uint8*)atlasTexturePixels.GetData(), rawData.GetData(), pixelCount * 4);
-
+	UPackage* texturePackage;
 	FString texturePackageName;
 	if (IsValid(TargetScriptPtr->atlasTexture))
 	{
+		texturePackage = TargetScriptPtr->atlasTexture->GetPackage();
 		texturePackageName = TargetScriptPtr->atlasTexture->GetPathName();
 		int indexOfDot = 0;
 		if (texturePackageName.FindLastChar('.', indexOfDot))
@@ -311,24 +249,76 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(TShare
 			texturePackageName = texturePackageName.Left(lastCharIndex + 1);
 		}
 		texturePackageName.Append(TargetScriptPtr->GetName()).Append(TEXT("_Texture"));
+#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 26
+		texturePackage = CreatePackage(*texturePackageName);
+#else
+		texturePackage = CreatePackage(NULL, *texturePackageName);
+#endif
 	}
-	auto fontTexture = TextureUtils::CreateTextureAsset(TargetScriptPtr->atlasTexture, texturePackageName, width, height, atlasTexturePixels, TextureCompressionSettings::TC_EditorIcon, TextureGroup::TEXTUREGROUP_World);
-	TargetScriptPtr->atlasTexture = fontTexture;
+
+	bool canceled = false;
+	UTextureFactory* Factory = NewObject<UTextureFactory>(UTextureFactory::StaticClass());
+	Factory->CompressionSettings = TextureCompressionSettings::TC_EditorIcon;
+	Factory->bAlphaToOpacity = true;
+	Factory->bDeferCompression = true;
+	auto importedAsset = Factory->ImportObject(UTexture2D::StaticClass(), texturePackage, FName(*FPaths::GetCleanFilename(texturePackageName)), RF_Public | RF_Standalone, textureFilePath, nullptr, canceled);
+	if (canceled)
+	{
+		return FReply::Handled();
+	}
+	TargetScriptPtr->atlasTexture = Cast<UTexture2D>(importedAsset);
+	FAssetRegistryModule::AssetCreated(TargetScriptPtr->atlasTexture);
+	texturePackage->SetDirtyFlag(true);
+
 	TargetScriptPtr->MarkPackageDirty();
 	ULGUIEditorManagerObject::RefreshAllUI();
+
+#if 0
+	//@todo: search all ULGUITexturePackerSpriteData, if it is not contained by any atlas then collect and delete it
+	//if (TargetScriptPtr->deleteSpriteIfNotPresent)
+	{
+		FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(FName("AssetRegistry"));
+		IAssetRegistry& AssetRegistry = AssetRegistryModule.Get();
+
+		// Need to do this if running in the editor with -game to make sure that the assets in the following path are available
+		TArray<FString> PathsToScan;
+		PathsToScan.Add(TEXT("/Game/"));
+		AssetRegistry.ScanPathsSynchronous(PathsToScan);
+
+		// Get asset in path
+		TArray<FAssetData> ScriptAssetList;
+		AssetRegistry.GetAssetsByPath(FName("/Game/"), ScriptAssetList, /*bRecursive=*/true);
+
+		// Ensure all assets are loaded
+		for (const FAssetData& Asset : ScriptAssetList)
+		{
+			// Gets the loaded asset, loads it if necessary
+			if (Asset.AssetClass == TEXT("LGUITexturePackerSpriteData"))
+			{
+				auto assetObject = Asset.GetAsset();
+				if (auto prefab = Cast<ULGUITexturePackerSpriteData>(assetObject))
+				{
+					
+				}
+			}
+		}
+	}
+#endif
+
 	return FReply::Handled();
 }
 
-bool FLGUITexturePackerImporterDataCustomization::GetFolderToSaveSpriteDatas(FString& OutFolderName)
+bool FLGUITexturePackerImporterDataCustomization::GetFolderToSaveSpriteDatas(FString& OutFolderName, const FString& InDefaultFolder)
 {
 	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
 	if (DesktopPlatform)
 	{
+		auto defaultFolder = FPaths::Combine(FPaths::ProjectContentDir(), InDefaultFolder);
 		if (
 			DesktopPlatform->OpenDirectoryDialog(
 				FSlateApplication::Get().FindBestParentWindowHandleForDialogs(FSlateApplication::Get().GetGameViewport()),
 				TEXT("LGUI will generate a lot of sprite-data assets depend on json file, please choose a folder to save these assets, must inside Content folder"),
-				FPaths::ProjectContentDir(),
+				defaultFolder,
 				OutFolderName
 			)
 			)
@@ -359,6 +349,7 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 	FString packageName = TEXT("/Game/") + FolderPath + "/" + SpriteData.name;
 	FString assetName = packageName + "." + FPaths::GetBaseFilename(SpriteData.name);
 	Result = LoadObject<ULGUITexturePackerSpriteData>(NULL, *assetName);
+	bool isCreated = false;
 	if (!IsValid(Result))
 	{
 #if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 26
@@ -369,27 +360,20 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 		package->FullyLoad();
 		FString fileName = FPaths::GetBaseFilename(SpriteData.name);
 		Result = NewObject<ULGUITexturePackerSpriteData>(package, ULGUITexturePackerSpriteData::StaticClass(), *fileName, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone);
+		isCreated = true;
 	}
 	auto& spriteInfo = Result->spriteInfo;
-	if (SpriteData.rotated)
-	{
-		spriteInfo.width = SpriteData.frame_h;
-		spriteInfo.height = SpriteData.frame_w;
-		spriteInfo.ApplyUV(SpriteData.frame_x, SpriteData.frame_y, SpriteData.frame_h, SpriteData.frame_w, texFullWidthReciprocal, texFullHeightReciprocal);
-		spriteInfo.ApplyBorderUV(texFullWidthReciprocal, texFullHeightReciprocal);
-	}
-	else
-	{
-		spriteInfo.width = SpriteData.frame_w;
-		spriteInfo.height = SpriteData.frame_h;
-		spriteInfo.ApplyUV(SpriteData.frame_x, SpriteData.frame_y, SpriteData.frame_w, SpriteData.frame_h, texFullWidthReciprocal, texFullHeightReciprocal);
-		spriteInfo.ApplyBorderUV(texFullWidthReciprocal, texFullHeightReciprocal);
-	}
+	spriteInfo.width = SpriteData.frame_w;
+	spriteInfo.height = SpriteData.frame_h;
+	spriteInfo.ApplyUV(SpriteData.frame_x, SpriteData.frame_y, SpriteData.frame_w, SpriteData.frame_h, texFullWidthReciprocal, texFullHeightReciprocal);
+	spriteInfo.ApplyBorderUV(texFullWidthReciprocal, texFullHeightReciprocal);
 
 	Result->importer = TargetScriptPtr.Get();
 	Result->MarkPackageDirty();
-	TargetScriptPtr->sprites.Add(Result);
-	FAssetRegistryModule::AssetCreated(Result);
+	if (isCreated)
+	{
+		FAssetRegistryModule::AssetCreated(Result);
+	}
 	return Result;
 }
 #undef LOCTEXT_NAMESPACE

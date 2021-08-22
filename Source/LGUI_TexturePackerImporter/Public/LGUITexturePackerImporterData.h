@@ -24,10 +24,16 @@ private:
 		FString jsonFilePath;
 	UPROPERTY(VisibleAnywhere, Category = "LGUI")
 		FString version;
+	/** Folder that save the generated sprites, inside Content folder. */
+	UPROPERTY(VisibleAnywhere, Category = "LGUI")
+		FString targetFolder;
+	/** Delete exist sprite data in target folder, if the sprite not present in the TexturePacker's json file. */
+	//UPROPERTY(VisibleAnywhere, Category = "LGUI")
+	//	bool deleteSpriteIfNotPresent = false;
 
 	UPROPERTY(EditAnywhere, Category = "LGUI")
 		TArray<ULGUITexturePackerSpriteData*> sprites;
-	UPROPERTY(EditAnywhere, Category = "LGUI")
+	UPROPERTY(VisibleAnywhere, Transient, Category = "LGUI", AdvancedDisplay)
 		TArray<TWeakObjectPtr<UUISpriteBase>> renderSpriteArray;
 	UPROPERTY(EditAnywhere, Category = "LGUI")
 		UTexture2D* atlasTexture;
