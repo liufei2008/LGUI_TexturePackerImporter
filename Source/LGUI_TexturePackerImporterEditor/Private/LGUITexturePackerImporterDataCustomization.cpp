@@ -267,6 +267,8 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(
 		return FReply::Handled();
 	}
 	TargetScriptPtr->atlasTexture = Cast<UTexture2D>(importedAsset);
+	TargetScriptPtr->atlasTexture->CompressionSettings = TextureCompressionSettings::TC_EditorIcon;
+	TargetScriptPtr->atlasTexture->UpdateResource();
 	FAssetRegistryModule::AssetCreated(TargetScriptPtr->atlasTexture);
 	texturePackage->SetDirtyFlag(true);
 
