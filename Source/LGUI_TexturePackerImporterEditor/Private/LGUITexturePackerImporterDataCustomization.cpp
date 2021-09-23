@@ -249,7 +249,7 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(
 			texturePackageName = texturePackageName.Left(lastCharIndex + 1);
 		}
 		texturePackageName.Append(TargetScriptPtr->GetName()).Append(TEXT("_Texture"));
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 26
+#if (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 25) || ENGINE_MAJOR_VERSION > 4
 		texturePackage = CreatePackage(*texturePackageName);
 #else
 		texturePackage = CreatePackage(NULL, *texturePackageName);
@@ -354,7 +354,7 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 	bool isCreated = false;
 	if (!IsValid(Result))
 	{
-#if ENGINE_MAJOR_VERSION >= 4 && ENGINE_MINOR_VERSION >= 26
+#if (ENGINE_MAJOR_VERSION == 4 && ENGINE_MINOR_VERSION >= 25) || ENGINE_MAJOR_VERSION > 4
 		UPackage* package = CreatePackage(*packageName);
 #else
 		UPackage* package = CreatePackage(NULL, *packageName);
