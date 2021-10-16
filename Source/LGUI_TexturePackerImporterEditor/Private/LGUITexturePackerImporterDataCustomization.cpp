@@ -184,6 +184,9 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(
 	auto framesJObject = jsonObject->GetArrayField("frames");
 	bool hasRotated = false;
 	TArray<SpriteDateStruct> spriteDataArray;
+	TArray<FString> spriteDataWithInvalidChars;
+	FString InvalidChars = INVALID_LONGPACKAGE_CHARACTERS TEXT("[]");
+	InvalidChars = InvalidChars.Replace(TEXT("\\"), TEXT(""));
 	for (int i = 0; i < framesJObject.Num(); i++)
 	{
 		auto itemJObject = framesJObject[i]->AsObject();
@@ -204,7 +207,6 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(
 		auto sourceSizeJOjbect = itemJObject->GetObjectField("sourceSize");
 		spriteData.sourceSize_w = sourceSizeJOjbect->GetIntegerField("w");
 		spriteData.sourceSize_h = sourceSizeJOjbect->GetIntegerField("h");
-		spriteDataArray.Add(spriteData);
 		if (rotated)
 		{
 			FMessageDialog::Open(EAppMsgType::Ok
@@ -212,14 +214,54 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(
 \nPlease uncheck the \"Allow rotation\" in TexturePacker."))));
 			return FReply::Handled();
 		}
-		if (trimmed)
+		//check invalid characters in path{
 		{
-			FMessageDialog::Open(EAppMsgType::Ok
-				, FText::FromString(FString::Printf(TEXT("Detect trimmed sprite, this is not supported!\
-\nPlease change the \"Trim mode\" to \"None\" in TexturePacker."))));
-			return FReply::Handled();
+			//remove file extension
+			{
+				int lastIndexOfDot;
+				if (spriteData.name.FindLastChar('.', lastIndexOfDot))
+				{
+					spriteData.name = spriteData.name.Left(lastIndexOfDot);
+				}
+			}
+
+			auto PathName = spriteData.name;
+			for (int32 CharIdx = 0; CharIdx < PathName.Len(); ++CharIdx)
+			{
+				auto Char = PathName.Mid(CharIdx, 1);
+				if (InvalidChars.Contains(*Char))
+				{
+					spriteDataWithInvalidChars.Add(PathName);
+				}
+			}
 		}
+
+		spriteDataArray.Add(spriteData);
 	}
+	if (spriteDataWithInvalidChars.Num() > 0)
+	{
+		FString ReadableInvalidChars = InvalidChars;
+		ReadableInvalidChars.ReplaceInline(TEXT("\r"), TEXT(""));
+		ReadableInvalidChars.ReplaceInline(TEXT("\n"), TEXT(""));
+		ReadableInvalidChars.ReplaceInline(TEXT("\t"), TEXT(""));
+
+		FString invalidSpritePaths;
+		for (int i = 0; i < spriteDataWithInvalidChars.Num() && i < 10; i++)
+		{
+			invalidSpritePaths += "		";
+			invalidSpritePaths += spriteDataWithInvalidChars[i];
+			invalidSpritePaths += "\n";
+		}
+		if (spriteDataWithInvalidChars.Num() > 10)
+		{
+			invalidSpritePaths += "		...";
+		}
+
+		auto ErrorMessage = FText::Format(LOCTEXT("InvalidFolderName_InvalidCharacters", "Sprite path name may not contain any of the following characters: {0}\n\nThese sprite paths not valid:\n{1}"), FText::FromString(ReadableInvalidChars), FText::FromString(invalidSpritePaths));
+		FMessageDialog::Open(EAppMsgType::Ok, ErrorMessage);
+		return FReply::Handled();
+	}
+
 	auto prevSprites = TargetScriptPtr->sprites;
 	TargetScriptPtr->sprites.Empty();
 	for (int i = 0; i < spriteDataArray.Num(); i++)
@@ -343,11 +385,6 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 {
 	ULGUITexturePackerSpriteData* Result = nullptr;
 
-	int lastIndexOfDot;
-	if (SpriteData.name.FindLastChar('.', lastIndexOfDot))
-	{
-		SpriteData.name = SpriteData.name.Left(lastIndexOfDot);
-	}
 	FString packageName = TEXT("/Game/") + FolderPath + "/" + SpriteData.name;
 	FString assetName = packageName + "." + FPaths::GetBaseFilename(SpriteData.name);
 	Result = LoadObject<ULGUITexturePackerSpriteData>(NULL, *assetName);
@@ -369,6 +406,11 @@ ULGUITexturePackerSpriteData* FLGUITexturePackerImporterDataCustomization::Creat
 	spriteInfo.height = SpriteData.frame_h;
 	spriteInfo.ApplyUV(SpriteData.frame_x, SpriteData.frame_y, SpriteData.frame_w, SpriteData.frame_h, texFullWidthReciprocal, texFullHeightReciprocal);
 	spriteInfo.ApplyBorderUV(texFullWidthReciprocal, texFullHeightReciprocal);
+
+	spriteInfo.paddingLeft = SpriteData.spriteSourceSize_x;
+	spriteInfo.paddingRight = SpriteData.sourceSize_w - SpriteData.spriteSourceSize_w - SpriteData.spriteSourceSize_x;
+	spriteInfo.paddingTop = SpriteData.spriteSourceSize_y;
+	spriteInfo.paddingBottom = SpriteData.sourceSize_h - SpriteData.spriteSourceSize_h - SpriteData.spriteSourceSize_y;
 
 	Result->importer = TargetScriptPtr.Get();
 	Result->MarkPackageDirty();

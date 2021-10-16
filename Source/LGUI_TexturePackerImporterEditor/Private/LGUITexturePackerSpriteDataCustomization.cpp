@@ -88,6 +88,12 @@ void FLGUITexturePackerSpriteDataCustomization::CustomizeDetails(IDetailLayoutBu
 	auto spriteTexture = TargetScriptPtr->GetAtlasTexture();
 	if (IsValid(spriteTexture))
 	{
+		IDetailCategoryBuilder& paddingCategory = DetailBuilder.EditCategory("Padding");
+		paddingCategory.AddProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerSpriteData, spriteInfo.paddingLeft));
+		paddingCategory.AddProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerSpriteData, spriteInfo.paddingRight));
+		paddingCategory.AddProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerSpriteData, spriteInfo.paddingTop));
+		paddingCategory.AddProperty(GET_MEMBER_NAME_CHECKED(ULGUITexturePackerSpriteData, spriteInfo.paddingBottom));
+
 		IDetailCategoryBuilder& borderEditorCategory = DetailBuilder.EditCategory("BorderEditor");
 		spriteSlateBrush = TSharedPtr<FSlateBrush>(new FSlateBrush);
 		spriteSlateBrush->SetResourceObject(spriteTexture);
