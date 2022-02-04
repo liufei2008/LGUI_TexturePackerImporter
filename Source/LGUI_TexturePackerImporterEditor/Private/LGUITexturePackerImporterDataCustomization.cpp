@@ -1,8 +1,8 @@
-// Copyright 2019-2021 LexLiu. All Rights Reserved.
+// Copyright 2021-present LexLiu. All Rights Reserved.
 
 #include "LGUITexturePackerImporterDataCustomization.h"
 #include "LGUI_TexturePackerImporterEditorPrivatePCH.h"
-#include "MISC/FileHelper.h"
+#include "Misc/FileHelper.h"
 #include "Widget/LGUIFileBrowser.h"
 #include "Core/Actor/LGUIManagerActor.h"
 
@@ -357,7 +357,8 @@ bool FLGUITexturePackerImporterDataCustomization::GetFolderToSaveSpriteDatas(FSt
 	IDesktopPlatform* DesktopPlatform = FDesktopPlatformModule::Get();
 	if (DesktopPlatform)
 	{
-		auto defaultFolder = FPaths::Combine(FPaths::ProjectContentDir(), InDefaultFolder);
+		auto ProjectContentDir = FPaths::ConvertRelativePathToFull(FPaths::ProjectContentDir());
+		auto defaultFolder = FPaths::Combine(ProjectContentDir, InDefaultFolder);
 		if (
 			DesktopPlatform->OpenDirectoryDialog(
 				FSlateApplication::Get().FindBestParentWindowHandleForDialogs(FSlateApplication::Get().GetGameViewport()),
@@ -367,9 +368,9 @@ bool FLGUITexturePackerImporterDataCustomization::GetFolderToSaveSpriteDatas(FSt
 			)
 			)
 		{
-			if (OutFolderName.StartsWith(FPaths::ProjectContentDir()))
+			if (OutFolderName.StartsWith(ProjectContentDir))
 			{
-				OutFolderName.RemoveFromStart(FPaths::ProjectContentDir());
+				OutFolderName.RemoveFromStart(ProjectContentDir);
 				return true;
 			}
 			else
