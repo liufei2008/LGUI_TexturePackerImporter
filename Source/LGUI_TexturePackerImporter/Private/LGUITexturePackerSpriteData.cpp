@@ -18,7 +18,7 @@ UTexture2D* ULGUITexturePackerSpriteData::GetAtlasTexture()
 		return nullptr;
 	}
 }
-FLGUISpriteInfo ULGUITexturePackerSpriteData::GetSpriteInfo()
+const FLGUISpriteInfo& ULGUITexturePackerSpriteData::GetSpriteInfo()
 {
 	return spriteInfo;
 }

@@ -25,7 +25,7 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "LGUI")
 		FString version;
 	/** Folder that save the generated sprites, inside Content folder. */
-	UPROPERTY(VisibleAnywhere, Category = "LGUI")
+	UPROPERTY(EditAnywhere, Category = "LGUI")
 		FString targetFolder;
 	/** Delete exist sprite data in target folder, if the sprite not present in the TexturePacker's json file. */
 	//UPROPERTY(VisibleAnywhere, Category = "LGUI")
