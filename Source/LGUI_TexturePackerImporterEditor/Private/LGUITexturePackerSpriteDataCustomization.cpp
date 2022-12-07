@@ -12,6 +12,11 @@
 
 #define LOCTEXT_NAMESPACE "LGUITexturePackerSpriteDataCustomization"
 
+#if ENGINE_MAJOR_VERSION == 5 && ENGINE_MINOR_VERSION >= 1
+#else
+#define FAppStyle FEditorStyle
+#endif
+
 TSharedRef<IDetailCustomization> FLGUITexturePackerSpriteDataCustomization::MakeInstance()
 {
 	return MakeShareable(new FLGUITexturePackerSpriteDataCustomization);
@@ -131,7 +136,7 @@ void FLGUITexturePackerSpriteDataCustomization::CustomizeDetails(IDetailLayoutBu
 							+SOverlay::Slot()
 							[
 								SNew(SImage)
-								.Image(FEditorStyle::GetBrush("Checkerboard"))
+								.Image(FAppStyle::GetBrush("Checkerboard"))
 								.ColorAndOpacity(FSlateColor(FLinearColor(0.15f, 0.15f, 0.15f)))
 							]
 							//image display
@@ -160,7 +165,7 @@ void FLGUITexturePackerSpriteDataCustomization::CustomizeDetails(IDetailLayoutBu
 										.WidthOverride(1)
 										[
 											SNew(SImage)
-											.Image(FEditorStyle::GetBrush("PropertyEditor.VerticalDottedLine"))
+											.Image(FAppStyle::GetBrush("PropertyEditor.VerticalDottedLine"))
 										]
 									]
 								]
@@ -180,7 +185,7 @@ void FLGUITexturePackerSpriteDataCustomization::CustomizeDetails(IDetailLayoutBu
 										.WidthOverride(1)
 										[
 											SNew(SImage)
-											.Image(FEditorStyle::GetBrush("PropertyEditor.VerticalDottedLine"))
+											.Image(FAppStyle::GetBrush("PropertyEditor.VerticalDottedLine"))
 										]
 									]
 								]
@@ -200,7 +205,7 @@ void FLGUITexturePackerSpriteDataCustomization::CustomizeDetails(IDetailLayoutBu
 										.HeightOverride(1)
 										[
 											SNew(SImage)
-											.Image(FEditorStyle::GetBrush("PropertyEditor.HorizontalDottedLine"))
+											.Image(FAppStyle::GetBrush("PropertyEditor.HorizontalDottedLine"))
 										]
 									]
 								]
@@ -220,7 +225,7 @@ void FLGUITexturePackerSpriteDataCustomization::CustomizeDetails(IDetailLayoutBu
 										.HeightOverride(1)
 										[
 											SNew(SImage)
-											.Image(FEditorStyle::GetBrush("PropertyEditor.HorizontalDottedLine"))
+											.Image(FAppStyle::GetBrush("PropertyEditor.HorizontalDottedLine"))
 										]
 									]
 								]

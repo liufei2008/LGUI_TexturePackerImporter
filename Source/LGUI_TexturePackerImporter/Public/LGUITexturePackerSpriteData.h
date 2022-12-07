@@ -2,7 +2,7 @@
 
 #pragma once
 
-#include "Engine.h"
+#include "CoreMinimal.h"
 #include "Core/LGUISpriteData_BaseObject.h"
 #include "LGUITexturePackerSpriteData.generated.h"
 
