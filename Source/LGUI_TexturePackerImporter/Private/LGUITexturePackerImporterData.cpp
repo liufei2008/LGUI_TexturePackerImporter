@@ -4,7 +4,6 @@
 
 #include "LGUITexturePackerImporterData.h"
 #include "Core/ActorComponent/UIText.h"
-#include "Core/Actor/LGUIManagerActor.h"
 
 
 #if WITH_EDITOR
@@ -17,13 +16,13 @@ void ULGUITexturePackerImporterData::PostEditChangeProperty(FPropertyChangedEven
 	}
 }
 #endif
-void ULGUITexturePackerImporterData::AddUISprite(UUISpriteBase* InSprite)
+void ULGUITexturePackerImporterData::AddUISprite(TScriptInterface<IUISpriteRenderableInterface> InUISprite)
 {
-	renderSpriteArray.Add(InSprite);
+	renderSpriteArray.AddUnique(InUISprite.GetObject());
 }
-void ULGUITexturePackerImporterData::RemoveUISprite(UUISpriteBase* InSprite)
+void ULGUITexturePackerImporterData::RemoveUISprite(TScriptInterface<IUISpriteRenderableInterface> InUISprite)
 {
-	renderSpriteArray.Remove(InSprite);
+	renderSpriteArray.RemoveSingle(InUISprite.GetObject());
 }
 bool ULGUITexturePackerImporterData::ContainsSpriteData(ULGUITexturePackerSpriteData* InSpriteData)
 {

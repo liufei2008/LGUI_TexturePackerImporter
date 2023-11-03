@@ -34,13 +34,13 @@ private:
 	UPROPERTY(EditAnywhere, Category = "LGUI")
 		TArray<ULGUITexturePackerSpriteData*> sprites;
 	UPROPERTY(VisibleAnywhere, Transient, Category = "LGUI", AdvancedDisplay)
-		TArray<TWeakObjectPtr<UUISpriteBase>> renderSpriteArray;
+		TArray<TWeakObjectPtr<UObject>> renderSpriteArray;
 	UPROPERTY(EditAnywhere, Category = "LGUI")
 		UTexture2D* atlasTexture;
 public:
 	UTexture2D* GetAtlasTexture()const { return atlasTexture; }
-	void AddUISprite(UUISpriteBase* InSprite);
-	void RemoveUISprite(UUISpriteBase* InSprite);
+	void AddUISprite(TScriptInterface<IUISpriteRenderableInterface> InUISprite);
+	void RemoveUISprite(TScriptInterface<IUISpriteRenderableInterface> InUISprite);
 	bool ContainsSpriteData(ULGUITexturePackerSpriteData* InSpriteData);
 #if WITH_EDITOR
 	void PostEditChangeProperty(FPropertyChangedEvent& PropertyChangedEvent);

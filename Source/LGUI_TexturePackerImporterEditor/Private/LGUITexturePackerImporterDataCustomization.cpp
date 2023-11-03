@@ -4,9 +4,9 @@
 #include "LGUI_TexturePackerImporterEditorPrivatePCH.h"
 #include "Misc/FileHelper.h"
 #include "Widget/LGUIFileBrowser.h"
-#include "Core/Actor/LGUIManagerActor.h"
+#include "Core/Actor/LGUIManager.h"
 
-#include "AssetRegistryModule.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Factories.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
@@ -17,8 +17,6 @@
 
 #include "Dom/JsonObject.h"
 #include "Dom/JsonValue.h"
-
-#include "AssetRegistryModule.h"
 
 #define LOCTEXT_NAMESPACE "LGUITexturePackerImporterDataCustomization"
 
@@ -315,7 +313,7 @@ FReply FLGUITexturePackerImporterDataCustomization::OnCreateButtonClicked(
 	texturePackage->SetDirtyFlag(true);
 
 	TargetScriptPtr->MarkPackageDirty();
-	ULGUIEditorManagerObject::RefreshAllUI();
+	ULGUIManagerWorldSubsystem::RefreshAllUI();
 
 #if 0
 	//@todo: search all ULGUITexturePackerSpriteData, if it is not contained by any atlas then collect and delete it

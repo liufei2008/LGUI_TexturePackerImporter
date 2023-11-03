@@ -5,7 +5,7 @@
 #include "LGUITexturePackerSpriteData.h"
 #include "LGUITexturePackerImporterData.h"
 #include "Core/ActorComponent/UISpriteBase.h"
-#include "Core/Actor/LGUIManagerActor.h"
+#include "Core/Actor/LGUIManager.h"
 
 UTexture2D* ULGUITexturePackerSpriteData::GetAtlasTexture()
 {
@@ -26,14 +26,14 @@ bool ULGUITexturePackerSpriteData::IsIndividual()const
 {
 	return false;
 }
-void ULGUITexturePackerSpriteData::AddUISprite(UUISpriteBase* InUISprite)
+void ULGUITexturePackerSpriteData::AddUISprite(TScriptInterface<IUISpriteRenderableInterface> InUISprite)
 {
 	if (IsValid(importer))
 	{
 		importer->AddUISprite(InUISprite);
 	}
 }
-void ULGUITexturePackerSpriteData::RemoveUISprite(UUISpriteBase* InUISprite)
+void ULGUITexturePackerSpriteData::RemoveUISprite(TScriptInterface<IUISpriteRenderableInterface> InUISprite)
 {
 	if (IsValid(importer))
 	{
@@ -62,7 +62,7 @@ void ULGUITexturePackerSpriteData::PostEditChangeProperty(FPropertyChangedEvent&
 				spriteInfo.ApplyBorderUV(atlasTextureSizeXInv, atlasTextureSizeYInv);
 			}
 		}
-		ULGUIEditorManagerObject::RefreshAllUI();
+		ULGUIManagerWorldSubsystem::RefreshAllUI();
 	}
 }
 #endif

@@ -5,9 +5,7 @@
 #include "Core/LGUISettings.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
-#include "Core/LGUIAtlasData.h"
 #include "LGUI_TexturePackerImporterEditorPrivatePCH.h"
-#include "Core/Actor/LGUIManagerActor.h"
 #include "Sound/SoundCue.h"
 
 #define LOCTEXT_NAMESPACE "LGUITexturePackerSpriteDataCustomization"
